@@ -52,13 +52,33 @@ describe("mytoken deploy", () => {
   //////////////////////////////////////////////////////////
   describe("Transfer", () => {
     it("should have 0.5MT", async () => {
+      const signer0 = signers[0];
       const signer1 = signers[1];
+      //event check 하는 logic은 expect 앞에.
+      await expect(
+        myTokenC.transfer(
+          hre.ethers.parseUnits("0.5", decimals),
+          signer1.address
+        )
+      )
+        .to.emit(myTokenC, "Transfer") // < - transger  라는 event
+        .withArgs(
+          signer0.address,
+          signer1.address,
+          hre.ethers.parseUnits("0.5", decimals)
+        );
       // tx 임.
       // 따라서 호출하면 등록되어있는 singer로 tx를 만듬
-      await myTokenC.transfer(
-        hre.ethers.parseUnits("0.5", 18),
-        signer1.address
-      );
+      // const tx = await myTokenC.transfer(
+      //   hre.ethers.parseUnits("0.5", 18),
+      //   signer1.address
+      // );
+      // const receipt = await tx.wait();
+      //console.log(receipt?.logs); -> topics.. = event string hash /
+      //search는 topics을 사용해서 한다. arg index 3개.
+      //const filter = myTokenC.filters.Transfer(signer0.address);
+      //const logs = await myTokenC.queryFilter(filter, 0, "latest"); // 위 filter에 맞는 transfer event .
+      //console.log((await logs).length);
       expect(await myTokenC.balanceOf(signer1)).equal(
         hre.ethers.parseUnits("0.5", 18)
       );

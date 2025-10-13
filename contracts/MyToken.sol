@@ -4,6 +4,7 @@
 pragma solidity ^0.8.28;
 
 contract MyToken {
+    event Transfer(address indexed from, address indexed to, uint256 value);
     string public name;
     string public symbol;
     uint8 public decimals; //
@@ -17,11 +18,16 @@ contract MyToken {
     // contract 배포하는 tx를 사용.
     // from, to, data, value, gas ...
     // amount . decimals (18) 이 경우 1 이면 10^-18 * 1
-    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
+        uint256 _amount
+    ) {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        _mint(1 * 10 ** uint256(decimals), msg.sender); // 1 MT .. 추가발행 x (constructor 한번 실행됨)
+        _mint(_amount * 10 ** uint256(decimals), msg.sender); // 1 MT .. 추가발행 x (constructor 한번 실행됨)
     }
 
     // ...
@@ -46,6 +52,8 @@ contract MyToken {
     function _mint(uint256 amount, address owner) internal {
         totalSupply += amount;
         balanceOf[owner] += amount;
+
+        emit Transfer(address(0), owner, amount);
     }
 
     function transfer(uint256 amount, address to) external {
@@ -54,5 +62,7 @@ contract MyToken {
 
         balanceOf[msg.sender] -= amount;
         balanceOf[to] += amount;
+
+        emit Transfer(msg.sender, to, amount);
     }
 }
