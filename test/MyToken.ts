@@ -9,6 +9,7 @@ describe("mytoken deploy", () => {
 
   before("should deploy", async () => {
     signers = await hre.ethers.getSigners();
+    //deploy contract 를 signed default idx :0 /
     myTokenC = await hre.ethers.deployContract("MyToken", [
       "MyToken",
       "MT",
@@ -25,11 +26,22 @@ describe("mytoken deploy", () => {
   it("should return decimals", async () => {
     expect(await myTokenC.decimals()).equal(18);
   });
-  it("should return 0 totalSupply", async () => {
-    expect(await myTokenC.totalSupply()).equal(0);
+  it("should return 1MT totalSupply", async () => {
+    expect(await myTokenC.totalSupply()).equal(1n * 10n ** 18n);
   });
-  it("should return 0 balance for signer 0", async () => {
+  // 1MT = 1*10^18..
+  it("should return 1MT balance for signer 0", async () => {
     const signers0 = signers[0];
-    expect(await myTokenC.balanceOf(signers0.address)).equal(0);
+    // big number
+    expect(await myTokenC.balanceOf(signers0.address)).equal(1n * 10n ** 18n);
+  });
+  it("should have 0.5MT", async () => {
+    const signer1 = signers[1];
+    // tx 임.
+    // 따라서 호출하면 등록되어있는 singer로 tx를 만듬
+    await myTokenC.transfer(hre.ethers.parseUnits("0.5", 18), signer1.address);
+    expect(await myTokenC.balanceOf(signer1)).equal(
+      hre.ethers.parseUnits("0.5", 18)
+    );
   });
 });

@@ -1,4 +1,4 @@
-// SPDX-License-Identifer : MIT
+// SPDX-License-Identifier : MIT
 
 //articacts 밑 contracts 에 .. comfile.
 pragma solidity ^0.8.28;
@@ -11,11 +11,17 @@ contract MyToken {
     uint256 public totalSupply; //
     mapping(address => uint256) public balanceOf; // who
 
+    //balance check는 tx 없이 할 수 있음 모든 노드에 대해서.
+
     // contract NAME 으로 호출되는 익명함수.
+    // contract 배포하는 tx를 사용.
+    // from, to, data, value, gas ...
+    // amount . decimals (18) 이 경우 1 이면 10^-18 * 1
     constructor(string memory _name, string memory _symbol, uint8 _decimals) {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
+        _mint(1 * 10 ** uint256(decimals), msg.sender); // 1 MT .. 추가발행 x (constructor 한번 실행됨)
     }
 
     // ...
@@ -31,5 +37,22 @@ contract MyToken {
     //     function name() external view returns (string memory) {
     //         return name;
     //     }
-    //
+    // ...
+
+    /////////////////////////////////////
+    // token을 발행할때.. mint..
+    // constructor 실행할떄.
+    ///////////////////////////////////
+    function _mint(uint256 amount, address owner) internal {
+        totalSupply += amount;
+        balanceOf[owner] += amount;
+    }
+
+    function transfer(uint256 amount, address to) external {
+        //assert.. ?
+        require(balanceOf[msg.sender] >= amount, "insufficient balance");
+
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+    }
 }
