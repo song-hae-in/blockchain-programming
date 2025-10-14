@@ -95,4 +95,28 @@ describe("mytoken deploy", () => {
       ).to.be.revertedWith("insufficient balance");
     });
   });
+
+  describe("TransferFrom", () => {
+    it("should emit Approval event", async () => {
+      const signer1 = signers[1];
+      await expect(
+        myTokenC.approve(signer1.address, hre.ethers.parseUnits("10", decimals))
+      )
+        .to.emit(myTokenC, "Approval")
+        .withArgs(signer1.address, hre.ethers.parseUnits("10", decimals));
+    });
+    it("should be reverted with insufficient allowance error", async () => {
+      const singer1 = signers[1];
+      const singer0 = signers[0];
+      await expect(
+        myTokenC
+          .connect(singer1)
+          .TransferFrom(
+            singer0.address,
+            singer1.address,
+            hre.ethers.parseUnits("1", decimals)
+          )
+      ).to.be.revertedWith("insufficient allowance");
+    });
+  });
 });
