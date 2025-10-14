@@ -111,12 +111,34 @@ describe("mytoken deploy", () => {
       await expect(
         myTokenC
           .connect(singer1)
-          .TransferFrom(
+          .transferFrom(
             singer0.address,
             singer1.address,
             hre.ethers.parseUnits("1", decimals)
           )
       ).to.be.revertedWith("insufficient allowance");
+    });
+    it("should emit Transfer event", async () => {
+      const signer0 = signers[0];
+      const signer1 = signers[1];
+      const amount = hre.ethers.parseUnits("1", decimals);
+      const signer0_BalanceBefore = await myTokenC.balanceOf(signer0.address);
+      const signer1_BalanceBefore = await myTokenC.balanceOf(signer1.address);
+
+      await myTokenC.approve(signer1.address, 10n * amount);
+
+      await expect(
+        myTokenC
+          .connect(signer1)
+          .transferFrom(signer0.address, signer1.address, amount)
+      )
+        .to.emit(myTokenC, "Transfer")
+        .withArgs(signer0.address, signer1.address, amount);
+
+      const signer0_BalanceAfter = await myTokenC.balanceOf(signer0.address);
+      const signer1_BalanceAfter = await myTokenC.balanceOf(signer1.address);
+      expect(signer0_BalanceAfter).equal(signer0_BalanceBefore - amount);
+      expect(signer1_BalanceAfter).equal(signer1_BalanceBefore + amount);
     });
   });
 });
