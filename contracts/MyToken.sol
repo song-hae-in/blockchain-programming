@@ -12,7 +12,7 @@ contract MyToken {
 
     uint256 public totalSupply; //
     mapping(address => uint256) public balanceOf; // who
-    mapping(address => mapping(address => uint256)) allowance; // who, much, amount
+    mapping(address => mapping(address => uint256)) public allowance; // who, much, amount
 
     //balance check는 tx 없이 할 수 있음 모든 노드에 대해서.
 
@@ -66,6 +66,10 @@ contract MyToken {
     // token을 발행할때.. mint..
     // constructor 실행할떄.
     ///////////////////////////////////
+    function mint(uint256 amount, address owner) external {
+        _mint(amount, owner);
+    }
+
     function _mint(uint256 amount, address owner) internal {
         totalSupply += amount;
         balanceOf[owner] += amount;
