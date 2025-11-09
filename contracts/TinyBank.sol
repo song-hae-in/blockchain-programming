@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
+import "./ManagedAccess.sol";
 
 // 예치, ..
 // deposit(my Token)
@@ -15,7 +16,7 @@ interface IMyToken {
     function mint(uint256 amount, address owner) external;
 }
 
-contract TinyBank {
+contract TinyBank is ManagedAcess {
     event Staked(address, uint256);
     event Withdraw(uint256 amount, address to);
 
@@ -27,15 +28,17 @@ contract TinyBank {
 
     mapping(address => uint256) public staked;
     uint256 public totalstaked;
-    uint256 rewardPerBlock = 1 * 10 ** 18;
+    uint256 defaultReawardPerBlock = 1 * 10 ** 18;
+    uint256 rewardPerBlock;
 
-    constructor(IMyToken _stakingToken) {
+    constructor(IMyToken _stakingToken) ManagedAcess(msg.sender, msg.sender) {
         stakingToken = _stakingToken;
+        rewardPerBlock = defaultReawardPerBlock;
     }
 
     //reward ..
     //genesis staking
-    function updateReward(address to) internal {
+    modifier updateReward(address to) {
         if (staked[to] > 0) {
             uint256 blocks = block.number - lastClaimedBlock[to];
             uint256 reward = (blocks * rewardPerBlock * staked[to]) /
@@ -44,13 +47,17 @@ contract TinyBank {
         }
 
         lastClaimedBlock[to] = block.number;
+        _;
     }
 
-    function stake(uint256 _amount) external {
+    function setRewardPerBlock(uint256 _amount) external onlyMgr {
+        rewardPerBlock = _amount;
+    }
+
+    function stake(uint256 _amount) external updateReward(msg.sender) {
         // 이거 는 tinybank가 호출해서? amount check no?
         // IMyToken.transfer(msg.sender, address(this), _amount)
         require(_amount >= 0, "cannot stake 0 amount");
-        updateReward(msg.sender);
         stakingToken.transferFrom(msg.sender, address(this), _amount); // user가 approve 햇다면.
         staked[msg.sender] += _amount;
         totalstaked += _amount;
@@ -58,9 +65,8 @@ contract TinyBank {
         emit Staked(msg.sender, _amount);
     }
 
-    function withdraw(uint256 _amount) external {
+    function withdraw(uint256 _amount) external updateReward(msg.sender) {
         require(staked[msg.sender] >= _amount, "insufficient staked token");
-        updateReward(msg.sender);
         stakingToken.transfer(_amount, msg.sender);
         staked[msg.sender] -= _amount;
         totalstaked -= _amount;
