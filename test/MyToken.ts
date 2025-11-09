@@ -2,6 +2,7 @@ import hre from "hardhat";
 import { expect } from "chai";
 import { MyToken } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { DECIMALS } from "./constant";
 
 const mintingAmount = 100n;
 const decimals = 18n;
@@ -47,6 +48,14 @@ describe("mytoken deploy", () => {
       expect(await myTokenC.balanceOf(signers0.address)).equal(
         mintingAmount * 10n ** decimals
       );
+    });
+    //TDD : test Driven development <- test 먼저 개발하고 이게 통과되도록 개발하는 것.
+    it("should return or revert when minting infinitly", async () => {
+      const hacker = signers[2];
+      const mintingAmount = hre.ethers.parseUnits("100", DECIMALS);
+      await expect(
+        myTokenC.connect(hacker).mint(mintingAmount, hacker.address)
+      ).to.be.revertedWith("you are not authorized manage this token");
     });
   });
   //////////////////////////////////////////////////////////

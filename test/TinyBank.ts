@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { MyToken, TinyBank } from "../typechain-types";
 import { DECIMALS, MINTING_AMOUNT } from "./constant";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { BlockList } from "net";
 
 describe("TinyBank", () => {
   let signers: HardhatEthersSigner[];
@@ -19,6 +20,7 @@ describe("TinyBank", () => {
     tinyBankC = await hre.ethers.deployContract("TinyBank", [
       await myTokenC.getAddress(),
     ]);
+    await myTokenC.setMgr(tinyBankC.getAddress());
   });
   describe("Initialized state check", () => {
     it("should return totalStaked 0", async () => {
@@ -52,6 +54,25 @@ describe("TinyBank", () => {
       await tinyBankC.stake(stakingAmount);
       await tinyBankC.withdraw(stakingAmount);
       expect(await tinyBankC.staked(signer0.address)).equal(0);
+    });
+  });
+
+  describe("reward", () => {
+    it("should reward 1MT every blocks", async () => {
+      const singer0 = signers[0];
+      const stakingAmount = hre.ethers.parseUnits("50", DECIMALS);
+      await myTokenC.approve(tinyBankC.getAddress(), stakingAmount);
+      await tinyBankC.stake(stakingAmount);
+      // 처음 stkaing 할때는 block number 가 증가x reward..
+      const transgerAmount = hre.ethers.parseUnits("1", DECIMALS);
+      const BLOCKS = 5n;
+      for (var i = 0; i < BLOCKS; i++) {
+        await myTokenC.transfer(transgerAmount, singer0.address);
+      }
+      await tinyBankC.withdraw(stakingAmount);
+      expect(await myTokenC.balanceOf(singer0.address)).equal(
+        hre.ethers.parseUnits((BLOCKS + MINTING_AMOUNT + 1n).toString())
+      );
     });
   });
 });

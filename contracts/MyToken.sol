@@ -2,14 +2,14 @@
 
 //articacts 밑 contracts 에 .. comfile.
 pragma solidity ^0.8.28;
+import "./ManagedAccess.sol";
 
-contract MyToken {
+contract MyToken is ManagedAcess {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed spender, uint256 indexed amount);
     string public name;
     string public symbol;
     uint8 public decimals; //
-
     uint256 public totalSupply; //
     mapping(address => uint256) public balanceOf; // who
     mapping(address => mapping(address => uint256)) public allowance; // who, much, amount
@@ -25,7 +25,7 @@ contract MyToken {
         string memory _symbol,
         uint8 _decimals,
         uint256 _amount
-    ) {
+    ) ManagedAcess(msg.sender, msg.sender) {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
@@ -66,15 +66,19 @@ contract MyToken {
     // token을 발행할때.. mint..
     // constructor 실행할떄.
     ///////////////////////////////////
-    function mint(uint256 amount, address owner) external {
-        _mint(amount, owner);
+    function mint(uint256 amount, address to) external onlyMgr {
+        _mint(amount, to);
     }
 
-    function _mint(uint256 amount, address owner) internal {
-        totalSupply += amount;
-        balanceOf[owner] += amount;
+    function setMgr(address _manager) external onlyOwner {
+        manager = _manager;
+    }
 
-        emit Transfer(address(0), owner, amount);
+    function _mint(uint256 amount, address to) internal {
+        totalSupply += amount;
+        balanceOf[to] += amount;
+
+        emit Transfer(address(0), to, amount);
     }
 
     function transfer(uint256 amount, address to) external {

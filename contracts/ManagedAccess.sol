@@ -1,0 +1,24 @@
+// SPDX-License-Identifier : MIT
+pragma solidity ^0.8.28;
+
+abstract contract ManagedAcess {
+    address public owner;
+    address public manager;
+
+    constructor(address _owner, address _manager) {
+        owner = _owner;
+        manager = _manager;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "you are not authorized");
+        _;
+    }
+    modifier onlyMgr() {
+        require(
+            msg.sender == manager,
+            "you are not authorized manage this token"
+        );
+        _;
+    }
+}

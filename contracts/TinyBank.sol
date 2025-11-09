@@ -33,10 +33,24 @@ contract TinyBank {
         stakingToken = _stakingToken;
     }
 
+    //reward ..
+    //genesis staking
+    function updateReward(address to) internal {
+        if (staked[to] > 0) {
+            uint256 blocks = block.number - lastClaimedBlock[to];
+            uint256 reward = (blocks * rewardPerBlock * staked[to]) /
+                totalstaked;
+            stakingToken.mint(reward, to);
+        }
+
+        lastClaimedBlock[to] = block.number;
+    }
+
     function stake(uint256 _amount) external {
         // 이거 는 tinybank가 호출해서? amount check no?
         // IMyToken.transfer(msg.sender, address(this), _amount)
         require(_amount >= 0, "cannot stake 0 amount");
+        updateReward(msg.sender);
         stakingToken.transferFrom(msg.sender, address(this), _amount); // user가 approve 햇다면.
         staked[msg.sender] += _amount;
         totalstaked += _amount;
@@ -46,31 +60,10 @@ contract TinyBank {
 
     function withdraw(uint256 _amount) external {
         require(staked[msg.sender] >= _amount, "insufficient staked token");
+        updateReward(msg.sender);
         stakingToken.transfer(_amount, msg.sender);
         staked[msg.sender] -= _amount;
         totalstaked -= _amount;
-        if (staked[msg.sender] == 0) {
-            uint256 index;
-            for (uint i = 0; i < stakedUsers.length; i++) {
-                if (stakedUsers[i] == msg.sender) {
-                    index = i;
-                    break;
-                }
-            }
-            stakedUsers[index] = stakedUsers[stakedUsers.length - 1];
-            stakedUsers.pop();
-        }
         emit Withdraw(_amount, msg.sender);
-    }
-
-    //reward ..
-    function distributeReward(address to) internal {
-        for (uint i = 0; i < stakedUsers.length; i++) {
-            uint256 blocks = block.number - lastClaimedBlock[to];
-            uint256 reward = (blocks * rewardPerBlock * staked[to]) /
-                totalstaked;
-            stakingToken.mint(reward, to);
-            lastClaimedBlock[to] = block.number;
-        }
     }
 }
