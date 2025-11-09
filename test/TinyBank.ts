@@ -9,6 +9,7 @@ describe("TinyBank", () => {
   let signers: HardhatEthersSigner[];
   let myTokenC: MyToken;
   let tinyBankC: TinyBank;
+  let managers: string[];
   beforeEach(async () => {
     signers = await hre.ethers.getSigners();
     myTokenC = await hre.ethers.deployContract("MyToken", [
@@ -17,8 +18,17 @@ describe("TinyBank", () => {
       DECIMALS,
       MINTING_AMOUNT,
     ]);
+
+    managers = [
+      signers[1].address,
+      signers[2].address,
+      signers[3].address,
+      signers[4].address,
+      signers[5].address,
+    ];
     tinyBankC = await hre.ethers.deployContract("TinyBank", [
       await myTokenC.getAddress(),
+      managers,
     ]);
     await myTokenC.setMgr(tinyBankC.getAddress());
   });
@@ -74,12 +84,30 @@ describe("TinyBank", () => {
         hre.ethers.parseUnits((BLOCKS + MINTING_AMOUNT + 1n).toString())
       );
     });
-    it("Should revert when changing rewardPerBlock by hacker", async () => {
+    it("Should revert when hacker try to confrim", async () => {
       const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
-      const hacker = signers[3];
-      await expect(
-        tinyBankC.connect(hacker).setRewardPerBlock(rewardToChange)
-      ).to.be.revertedWith("You are not authorized to manage this contract");
+      const hacker = signers[6];
+      await expect(tinyBankC.connect(hacker).confirm()).to.be.revertedWith(
+        "You are not one of managers"
+      );
     });
+
+    it("should revert when not all managers confirmed", async () => {
+      const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
+      const manager1 = signers[1];
+      await tinyBankC.connect(manager1).confirm();
+      await expect(
+        tinyBankC.setRewardPerBlock(rewardToChange)
+      ).to.be.revertedWith("Not all managers confirmed yet");
+    });
+
+    // it("should allow when all managers confirmed"),
+    //   async () => {
+    //     const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
+    //     for (let i = 1; i <= 5; i++) {
+    //       await tinyBankC.connect(signers[i]).confirm();
+    //     }
+    //     ex
+    //   };
   });
 });
