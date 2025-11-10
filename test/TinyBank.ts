@@ -101,13 +101,13 @@ describe("TinyBank", () => {
       ).to.be.revertedWith("Not all managers confirmed yet");
     });
 
-    // it("should allow when all managers confirmed"),
-    //   async () => {
-    //     const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
-    //     for (let i = 1; i <= 5; i++) {
-    //       await tinyBankC.connect(signers[i]).confirm();
-    //     }
-    //     ex
-    //   };
+    it("should allow when all managers confirmed", async () => {
+      const rewardToChange = hre.ethers.parseUnits("100", DECIMALS);
+      for (let i = 1; i <= 5; i++) {
+        await tinyBankC.connect(signers[i]).confirm();
+      }
+      await tinyBankC.setRewardPerBlock(rewardToChange);
+      expect(await tinyBankC.getRewardPerBlock()).equal(rewardToChange);
+    });
   });
 });

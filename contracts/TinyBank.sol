@@ -76,4 +76,8 @@ contract TinyBank is MultiManagedAccess {
         totalstaked -= _amount;
         emit Withdraw(_amount, msg.sender);
     }
+
+    function getRewardPerBlock() external view returns (uint256) {
+        return rewardPerBlock;
+    }
 }
