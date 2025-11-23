@@ -42,11 +42,13 @@ describe("mytoken deploy", () => {
   ///////////////////////////////////////////////////////////
   // 1MT = 1*10^18..
   describe("Mint", () => {
-    it("should return 1MT balance for signer 0", async () => {
+    it("should return initial supply + 1mt balance for signer 0", async () => {
       const signers0 = signers[0];
+      const onemt = hre.ethers.parseUnits("1", decimals);
+      await myTokenC.mint(onemt, signers0.address);
       // big number
       expect(await myTokenC.balanceOf(signers0.address)).equal(
-        mintingAmount * 10n ** decimals
+        mintingAmount * 10n ** decimals + onemt
       );
     });
     //TDD : test Driven development <- test 먼저 개발하고 이게 통과되도록 개발하는 것.
