@@ -9,7 +9,7 @@ describe("TinyBank", () => {
   let signers: HardhatEthersSigner[];
   let myTokenC: MyToken;
   let tinyBankC: TinyBank;
-  let managers: string[];
+  // let managers: string[];
   beforeEach(async () => {
     signers = await hre.ethers.getSigners();
     myTokenC = await hre.ethers.deployContract("MyToken", [
@@ -19,16 +19,16 @@ describe("TinyBank", () => {
       MINTING_AMOUNT,
     ]);
 
-    managers = [
-      signers[1].address,
-      signers[2].address,
-      signers[3].address,
-      signers[4].address,
-      signers[5].address,
-    ];
+    // managers = [
+    //   signers[1].address,
+    //   signers[2].address,
+    //   signers[3].address,
+    //   signers[4].address,
+    //   signers[5].address,
+    // ];
     tinyBankC = await hre.ethers.deployContract("TinyBank", [
       await myTokenC.getAddress(),
-      managers,
+      // managers,
     ]);
     await myTokenC.setMgr(tinyBankC.getAddress());
   });
@@ -48,6 +48,8 @@ describe("TinyBank", () => {
       const stakingAmount = hre.ethers.parseUnits("50", DECIMALS);
       await myTokenC.approve(await tinyBankC.getAddress(), stakingAmount);
       await tinyBankC.stake(stakingAmount);
+      //////////
+
       expect(await tinyBankC.staked(singer0.address)).equal(stakingAmount);
       expect(await tinyBankC.totalstaked()).equal(stakingAmount);
       expect(await myTokenC.balanceOf(tinyBankC)).equal(
@@ -67,47 +69,57 @@ describe("TinyBank", () => {
     });
   });
 
-  describe("reward", () => {
-    it("should reward 1MT every blocks", async () => {
-      const singer0 = signers[0];
-      const stakingAmount = hre.ethers.parseUnits("50", DECIMALS);
-      await myTokenC.approve(tinyBankC.getAddress(), stakingAmount);
-      await tinyBankC.stake(stakingAmount);
-      // 처음 stkaing 할때는 block number 가 증가x reward..
-      const transgerAmount = hre.ethers.parseUnits("1", DECIMALS);
-      const BLOCKS = 5n;
-      for (var i = 0; i < BLOCKS; i++) {
-        await myTokenC.transfer(transgerAmount, singer0.address);
-      }
-      await tinyBankC.withdraw(stakingAmount);
-      expect(await myTokenC.balanceOf(singer0.address)).equal(
-        hre.ethers.parseUnits((BLOCKS + MINTING_AMOUNT + 1n).toString())
-      );
+  describe("Manager", () => {
+    it("should allow manager to set reward", async () => {
+      // signer0 -- manager
+      const new_reward = hre.ethers.parseUnits("15", DECIMALS);
+      await tinyBankC.setRewardPerBlock(new_reward);
+      expect(await tinyBankC.getRewardPerBlock()).equal(new_reward);
     });
     it("Should revert when hacker try to confrim", async () => {
-      const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
       const hacker = signers[6];
-      await expect(tinyBankC.connect(hacker).confirm()).to.be.revertedWith(
-        "You are not one of managers"
-      );
-    });
-
-    it("should revert when not all managers confirmed", async () => {
-      const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
-      const manager1 = signers[1];
-      await tinyBankC.connect(manager1).confirm();
+      const new_reward = hre.ethers.parseUnits("15", DECIMALS);
       await expect(
-        tinyBankC.setRewardPerBlock(rewardToChange)
-      ).to.be.revertedWith("Not all managers confirmed yet");
+        tinyBankC.connect(hacker).setRewardPerBlock(new_reward)
+      ).to.be.revertedWith("You are not authorized to manage this contract");
     });
 
-    it("should allow when all managers confirmed", async () => {
-      const rewardToChange = hre.ethers.parseUnits("100", DECIMALS);
-      for (let i = 1; i <= 5; i++) {
-        await tinyBankC.connect(signers[i]).confirm();
-      }
-      await tinyBankC.setRewardPerBlock(rewardToChange);
-      expect(await tinyBankC.getRewardPerBlock()).equal(rewardToChange);
+    describe("reward", () => {
+      it("should reward 1MT every blocks", async () => {
+        const singer0 = signers[0];
+        const stakingAmount = hre.ethers.parseUnits("50", DECIMALS);
+        await myTokenC.approve(tinyBankC.getAddress(), stakingAmount);
+        await tinyBankC.stake(stakingAmount);
+        // 처음 stkaing 할때는 block number 가 증가x reward..
+        //블록 생성 및..(전송 5)
+        const transgerAmount = hre.ethers.parseUnits("1", DECIMALS);
+        const BLOCKS = 5n;
+        for (var i = 0; i < BLOCKS; i++) {
+          await myTokenC.transfer(transgerAmount, singer0.address);
+        }
+        await tinyBankC.withdraw(stakingAmount);
+        expect(await myTokenC.balanceOf(singer0.address)).equal(
+          hre.ethers.parseUnits((BLOCKS + MINTING_AMOUNT + 1n).toString())
+        );
+      });
     });
+
+    // it("should revert when not all managers confirmed", async () => {
+    //   const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
+    //   const manager1 = signers[1];
+    //   await tinyBankC.connect(manager1).confirm();
+    //   await expect(
+    //     tinyBankC.setRewardPerBlock(rewardToChange)
+    //   ).to.be.revertedWith("Not all managers confirmed yet");
+    // });
+
+    // it("should allow when all managers confirmed", async () => {
+    //   const rewardToChange = hre.ethers.parseUnits("100", DECIMALS);
+    //   for (let i = 1; i <= 5; i++) {
+    //     await tinyBankC.connect(signers[i]).confirm();
+    //   }
+    //   await tinyBankC.setRewardPerBlock(rewardToChange);
+    //   expect(await tinyBankC.getRewardPerBlock()).equal(rewardToChange);
+    // });
   });
 });
